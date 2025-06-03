@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Employee Burnout Prediction</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Employee Burnout Prediction</h1>
+        <p>Enter employee details to predict burnout rate</p>
+      </div>
+
+      <form action="/predict" method="post">
+        <div class="form-group">
+          <label for="designation">Designation Level</label>
+          <input
+            type="number"
+            id="designation"
+            name="designation"
+            min="1"
+            max="5"
+            step="1"
+            required
+            placeholder="Enter designation level (1-5)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="resource_allocation">Resource Allocation</label>
+          <input
+            type="number"
+            id="resource_allocation"
+            name="resource_allocation"
+            min="0"
+            max="10"
+            step="0.1"
+            required
+            placeholder="Enter resource allocation (0-10)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="mental_fatigue_score">Mental Fatigue Score</label>
+          <input
+            type="number"
+            id="mental_fatigue_score"
+            name="mental_fatigue_score"
+            min="0"
+            max="10"
+            step="0.1"
+            required
+            placeholder="Enter mental fatigue score (0-10)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="company_type">Company Type</label>
+          <select name="company_type" id="company_type" required>
+            <option value="" disabled selected>Select company type</option>
+            <option value="Service">Service</option>
+            <option value="Product">Product</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="wfh_setup_available">WFH Setup Available</label>
+          <select name="wfh_setup_available" id="wfh_setup_available" required>
+            <option value="" disabled selected>
+              Select WFH setup availability
+            </option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select name="gender" id="gender" required>
+            <option value="" disabled selected>Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-submit">Predict Burnout Rate</button>
+      </form>
+
+      {% if prediction %}
+      <div class="prediction-result">
+        <h2>Prediction Result</h2>
+        <div class="burnout-rate">{{ "%.2f"|format(prediction) }}</div>
+        <p>Burnout Rate (0-1 scale)</p>
+      </div>
+      {% endif %}
+    </div>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+EmployeesBurnoutAnalysis/
+.vercel
+node_modules
+.env

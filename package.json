@@ -1,0 +1,23 @@
+{
+  "name": "employee-burnout-prediction-using-machine-learning",
+  "version": "1.0.0",
+  "description": "Employees Burnout Analysis and Prediction\r =========================================",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Moha-adan/Employee-burnout.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Moha-adan/Employee-burnout/issues"
+  },
+  "homepage": "https://github.com/Moha-adan/Employee-burnout#readme",
+  "devDependencies": {
+    "vercel": "^42.1.1"
+  }
+}
