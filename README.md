@@ -86,10 +86,3 @@ To run this project, you need the following libraries:
     
 *   etc. (All dependencies are listed in requirements.txt)
     
-
-License
--------
-
-This project is open source and available under the MIT License.
-
-Happy analyzing and predicting! ❤️
