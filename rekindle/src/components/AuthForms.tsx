@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 type AuthFormProps = {
   type: 'login' | 'register';
@@ -14,10 +15,29 @@ const AuthForms: React.FC<AuthFormProps> = ({ type }) => {
     name: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { login, register: registerUser } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle authentication here
-    console.log('Form submitted:', formData);
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      if (type === 'login') {
+        await login(formData.email, formData.password);
+        navigate('/assessment');
+      } else {
+        await registerUser(formData.name, formData.email, formData.password);
+        navigate('/assessment');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,9 +174,15 @@ const AuthForms: React.FC<AuthFormProps> = ({ type }) => {
             </div>
           )}
 
+          {error && (
+            <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+              {error}
+            </div>
+          )}
           <button
             type="submit"
-            className="group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-medium shadow-lg transition-all duration-300"
+            disabled={isSubmitting}
+            className={`group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-medium shadow-lg transition-all duration-300 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
             <span className="absolute left-0 inset-y-0 flex items-center pl-3">
               <Lock className="h-5 w-5 text-blue-500 group-hover:text-blue-400" />

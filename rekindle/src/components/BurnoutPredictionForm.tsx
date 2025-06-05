@@ -57,12 +57,19 @@ const BurnoutPredictionForm: React.FC = () => {
 
       console.log("Sending prediction request with data:", backendData);
 
-      // Make prediction request
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please login to make a prediction');
+      }
+
+      // Make prediction request and save to backend
       const response = await axios.post(
-        "http://localhost:9000/predict",
+        "http://localhost:8000/api/predict",
         backendData,
         {
           headers: {
+            'Authorization': `Bearer ${token}`,
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },

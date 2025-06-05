@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Flame, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Flame, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, isAdmin } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -29,6 +32,11 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -74,18 +82,45 @@ const Navbar: React.FC = () => {
             ))}
             
             <div className="flex items-center space-x-4">
-              <Link
-                to="/login"
-                className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                className="px-4 py-2 bg-blue-600 text-white rounded-full font-medium shadow-md hover:bg-blue-700 transition-colors"
-              >
-                Sign Up
-              </Link>
+              {user ? (
+                <>
+                  {isAdmin() && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      <LayoutDashboard className="w-5 h-5 mr-1" />
+                      Dashboard
+                    </Link>
+                  )}
+                  <div className="flex items-center px-4 py-2 text-gray-700 font-medium">
+                    <User className="w-5 h-5 mr-1" />
+                    {user.name}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    <LogOut className="w-5 h-5 mr-1" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-full font-medium shadow-md hover:bg-blue-700 transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
 
@@ -130,18 +165,45 @@ const Navbar: React.FC = () => {
                 </Link>
               ))}
               <div className="pt-6 border-t border-gray-100">
-                <Link
-                  to="/login"
-                  className="block text-xl font-medium text-gray-700 mb-4"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  className="block text-xl font-medium text-blue-600"
-                >
-                  Sign Up
-                </Link>
+                {user ? (
+                  <>
+                    {isAdmin() && (
+                      <Link
+                        to="/admin"
+                        className="flex items-center text-xl font-medium text-gray-700 mb-4"
+                      >
+                        <LayoutDashboard className="w-5 h-5 mr-2" />
+                        Dashboard
+                      </Link>
+                    )}
+                    <div className="flex items-center text-xl font-medium text-gray-700 mb-4">
+                      <User className="w-5 h-5 mr-2" />
+                      {user.name}
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center text-xl font-medium text-blue-600"
+                    >
+                      <LogOut className="w-5 h-5 mr-2" />
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="block text-xl font-medium text-gray-700 mb-4"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="block text-xl font-medium text-blue-600"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>
