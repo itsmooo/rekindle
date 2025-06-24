@@ -184,7 +184,7 @@ const BurnoutPredictionForm: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Resource Allocation (%)
+              Resource Allocation (0-10)
             </label>
             <input
               type="number"
@@ -192,9 +192,10 @@ const BurnoutPredictionForm: React.FC = () => {
               value={formData.resourceAllocation}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter percentage (0-100)"
+              placeholder="Enter allocation (0-10)"
               min="0"
-              max="100"
+              max="10"
+              step="0.1"
               required
             />
           </div>
