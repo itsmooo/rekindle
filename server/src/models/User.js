@@ -21,6 +21,26 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin', 'hr'],
     default: 'user',
   },
+  bio: {
+    type: String,
+    default: '',
+  },
+  location: {
+    type: String,
+    default: '',
+  },
+  company: {
+    type: String,
+    default: '',
+  },
+  position: {
+    type: String,
+    default: '',
+  },
+  avatar: {
+    type: String,
+    default: '',
+  },
   burnoutPredictions: [{
     prediction: Number,
     date: {
