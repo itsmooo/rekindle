@@ -61,6 +61,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
     
     console.log('Returning user profile for:', user.email);
+    console.log('Avatar path in database:', user.avatar);
     res.json(user);
   } catch (error) {
     console.error('Get profile error:', error);
@@ -114,6 +115,11 @@ router.post('/upload-avatar', authenticateToken, upload.single('avatar'), async 
     // Update user's avatar path
     user.avatar = `/uploads/profiles/${req.file.filename}`;
     await user.save();
+
+    console.log('Avatar uploaded successfully:');
+    console.log('- File name:', req.file.filename);
+    console.log('- Avatar path saved:', user.avatar);
+    console.log('- Full URL would be: http://localhost:8000' + user.avatar);
 
     res.json({ 
       message: 'Avatar uploaded successfully',

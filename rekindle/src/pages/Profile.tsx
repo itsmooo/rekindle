@@ -97,15 +97,21 @@ const Profile: React.FC = () => {
           })
         ]);
 
-        setProfile(profileResponse.data);
+        // Construct proper avatar URL if avatar exists
+        const profileData = profileResponse.data;
+        if (profileData.avatar && !profileData.avatar.startsWith('http')) {
+          profileData.avatar = `http://localhost:8000${profileData.avatar}`;
+        }
+        
+        setProfile(profileData);
         setStats(statsResponse.data);
         setEditForm({
-          name: profileResponse.data.name || '',
-          email: profileResponse.data.email || '',
-          bio: profileResponse.data.bio || '',
-          location: profileResponse.data.location || '',
-          company: profileResponse.data.company || '',
-          position: profileResponse.data.position || ''
+          name: profileData.name || '',
+          email: profileData.email || '',
+          bio: profileData.bio || '',
+          location: profileData.location || '',
+          company: profileData.company || '',
+          position: profileData.position || ''
         });
       } catch (apiError) {
         console.log('API not available, using mock data');
@@ -216,7 +222,13 @@ const Profile: React.FC = () => {
       );
 
       if (profile) {
-        setProfile({ ...profile, avatar: `http://localhost:8000${response.data.avatar}` });
+        // The response.data.avatar already contains the full path like "/uploads/profiles/filename.jpg"
+        // So we need to construct the full URL correctly
+        const avatarUrl = `http://localhost:8000${response.data.avatar}`;
+        setProfile({ ...profile, avatar: avatarUrl });
+        
+        // Also store the path in localStorage for persistence
+        localStorage.setItem('userAvatar', avatarUrl);
       }
       
       alert('Profile picture updated successfully!');
