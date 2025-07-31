@@ -15,13 +15,23 @@ import {
   Activity,
   Shield,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X
 } from 'lucide-react';
 
 interface User {
   _id: string;
   name: string;
   email: string;
+  role?: string;
+  bio?: string;
+  location?: string;
+  company?: string;
+  position?: string;
   burnoutPredictions: Array<{
     prediction: number;
     date: string;
@@ -55,6 +65,30 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRisk, setFilterRisk] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user',
+    bio: '',
+    location: '',
+    company: '',
+    position: ''
+  });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    role: 'user',
+    bio: '',
+    location: '',
+    company: '',
+    position: '',
+    password: ''
+  });
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -112,6 +146,87 @@ const AdminDashboard: React.FC = () => {
     return matchesSearch && riskLabel.toLowerCase().includes(filterRisk);
   });
 
+  // CRUD Functions
+  const handleCreateUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:8000/api/admin/users', createForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setUsers([response.data, ...users]);
+      setShowCreateModal(false);
+      setCreateForm({
+        name: '',
+        email: '',
+        password: '',
+        role: 'user',
+        bio: '',
+        location: '',
+        company: '',
+        position: ''
+      });
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error creating user');
+    }
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`http://localhost:8000/api/admin/users/${editingUser._id}`, editForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setUsers(users.map(user => user._id === editingUser._id ? response.data : user));
+      setShowEditModal(false);
+      setEditingUser(null);
+      setEditForm({
+        name: '',
+        email: '',
+        role: 'user',
+        bio: '',
+        location: '',
+        company: '',
+        position: '',
+        password: ''
+      });
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error updating user');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:8000/api/admin/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setUsers(users.filter(user => user._id !== userId));
+      setDeleteConfirm(null);
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error deleting user');
+    }
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      role: user.role || 'user',
+      bio: user.bio || '',
+      location: user.location || '',
+      company: user.company || '',
+      position: user.position || '',
+      password: ''
+    });
+    setShowEditModal(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8">
@@ -139,16 +254,13 @@ const AdminDashboard: React.FC = () => {
               </h1>
               <p className="text-gray-600 text-lg">Monitor employee wellbeing and burnout risks</p>
             </div>
-            <div className="flex items-center space-x-4 mt-6 lg:mt-0">
-              <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
-              </button>
-              <button className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Analytics
-              </button>
-            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="mt-4 lg:mt-0 flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create User
+            </button>
           </div>
         </div>
 
@@ -392,14 +504,30 @@ const AdminDashboard: React.FC = () => {
                           : 'Never'}
                       </td>
                       <td className="py-4 px-4">
-                        <button
-                          onClick={() => setSelectedUser(user)}
-                          className="flex items-center px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200 group-hover:bg-blue-100"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                          <ChevronRight className="w-3 h-3 ml-1" />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => setSelectedUser(user)}
+                            className="flex items-center px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200 group-hover:bg-blue-100"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                            <ChevronRight className="w-3 h-3 ml-1" />
+                          </button>
+                          <button
+                            onClick={() => openEditModal(user)}
+                            className="flex items-center px-3 py-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all duration-200 group-hover:bg-green-100"
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(user._id)}
+                            className="flex items-center px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200 group-hover:bg-red-100"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -543,6 +671,278 @@ const AdminDashboard: React.FC = () => {
                       );
                     })}
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create User Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-2xl font-bold text-gray-800">Create New User</h3>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-all duration-200"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                    <input
+                      type="text"
+                      value={createForm.name}
+                      onChange={(e) => setCreateForm({...createForm, name: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter full name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input
+                      type="email"
+                      value={createForm.email}
+                      onChange={(e) => setCreateForm({...createForm, email: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                    <input
+                      type="password"
+                      value={createForm.password}
+                      onChange={(e) => setCreateForm({...createForm, password: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <select
+                      value={createForm.role}
+                      onChange={(e) => setCreateForm({...createForm, role: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                      <option value="hr">HR</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                    <input
+                      type="text"
+                      value={createForm.company}
+                      onChange={(e) => setCreateForm({...createForm, company: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter company name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                    <input
+                      type="text"
+                      value={createForm.position}
+                      onChange={(e) => setCreateForm({...createForm, position: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter job position"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={createForm.location}
+                      onChange={(e) => setCreateForm({...createForm, location: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter location"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <textarea
+                    value={createForm.bio}
+                    onChange={(e) => setCreateForm({...createForm, bio: e.target.value})}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter bio"
+                  />
+                </div>
+                <div className="flex justify-end space-x-4 pt-6">
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateUser}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Create User
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit User Modal */}
+        {showEditModal && editingUser && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-2xl font-bold text-gray-800">Edit User</h3>
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-all duration-200"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter full name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Password (leave blank to keep current)</label>
+                    <input
+                      type="password"
+                      value={editForm.password}
+                      onChange={(e) => setEditForm({...editForm, password: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <select
+                      value={editForm.role}
+                      onChange={(e) => setEditForm({...editForm, role: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                      <option value="hr">HR</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                    <input
+                      type="text"
+                      value={editForm.company}
+                      onChange={(e) => setEditForm({...editForm, company: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter company name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                    <input
+                      type="text"
+                      value={editForm.position}
+                      onChange={(e) => setEditForm({...editForm, position: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter job position"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={editForm.location}
+                      onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter location"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <textarea
+                    value={editForm.bio}
+                    onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter bio"
+                  />
+                </div>
+                <div className="flex justify-end space-x-4 pt-6">
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEditUser}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Update User
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Delete User</h3>
+                <p className="text-gray-600 mb-6">Are you sure you want to delete this user? This action cannot be undone.</p>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(deleteConfirm)}
+                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete User
+                  </button>
                 </div>
               </div>
             </div>
