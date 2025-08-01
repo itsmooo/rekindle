@@ -1,7 +1,67 @@
-import React from 'react';
-import { ArrowRight, Building, Users, LineChart, Award, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, Building, Users, LineChart, Award, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const ForEmployers: React.FC = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    company: '',
+    email: '',
+    phone: '',
+    companySize: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    try {
+      console.log('Submitting consultation data:', formData);
+      const response = await fetch('http://localhost:8000/api/consultation/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      console.log('Response status:', response.status);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+
+      if (response.ok) {
+        setSubmitStatus('success');
+        setFormData({
+          name: '',
+          company: '',
+          email: '',
+          phone: '',
+          companySize: '',
+          message: ''
+        });
+      } else {
+        console.error('Error response:', responseData);
+        setSubmitStatus('error');
+      }
+    } catch (error) {
+      console.error('Error submitting consultation:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="pt-32 pb-20">
       <div className="container mx-auto px-4">
@@ -266,7 +326,7 @@ const ForEmployers: React.FC = () => {
               </p>
             </div>
             
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
@@ -274,6 +334,10 @@ const ForEmployers: React.FC = () => {
                 <input
                   type="text"
                   id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="John Smith"
                 />
@@ -286,6 +350,10 @@ const ForEmployers: React.FC = () => {
                 <input
                   type="text"
                   id="company"
+                  name="company"
+                  value={formData.company}
+                  onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Acme Inc."
                 />
@@ -298,6 +366,10 @@ const ForEmployers: React.FC = () => {
                 <input
                   type="email"
                   id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="john@company.com"
                 />
@@ -310,17 +382,25 @@ const ForEmployers: React.FC = () => {
                 <input
                   type="tel"
                   id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="(555) 123-4567"
                 />
               </div>
               
               <div className="md:col-span-2">
-                <label htmlFor="employees" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="companySize" className="block text-sm font-medium text-gray-700 mb-1">
                   Company Size
                 </label>
                 <select
-                  id="employees"
+                  id="companySize"
+                  name="companySize"
+                  value={formData.companySize}
+                  onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select company size</option>
@@ -338,18 +418,66 @@ const ForEmployers: React.FC = () => {
                 </label>
                 <textarea
                   id="message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  required
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Tell us about your organization's needs..."
                 ></textarea>
               </div>
               
+              {submitStatus === 'success' && (
+                <div className="md:col-span-2">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-green-800 font-medium">
+                          Thank you! Your consultation request has been submitted successfully.
+                        </p>
+                        <p className="text-green-700 text-sm mt-1">
+                          We'll review your request and get back to you within 24-48 hours. You can also check your email for a confirmation.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {submitStatus === 'error' && (
+                <div className="md:col-span-2">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <AlertTriangle className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-red-800 font-medium">
+                          There was an error submitting your request.
+                        </p>
+                        <p className="text-red-700 text-sm mt-1">
+                          Please check your internet connection and try again. If the problem persists, please contact us directly.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="md:col-span-2">
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white rounded-lg py-3 px-4 hover:bg-blue-700 transition-colors shadow-md"
+                  disabled={isSubmitting}
+                  className="w-full bg-blue-600 text-white rounded-lg py-3 px-4 hover:bg-blue-700 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  Request Consultation
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Request Consultation'
+                  )}
                 </button>
               </div>
             </form>

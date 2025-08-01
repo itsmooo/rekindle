@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const predictRoutes = require('./routes/predict');
 const profileRoutes = require('./routes/profile');
+const consultationRoutes = require('./routes/consultation');
 const { authenticateToken } = require('./middleware/auth');
 console.log('All routes loaded successfully');
 
@@ -48,6 +49,8 @@ app.use('/api/predict', predictRoutes);
 console.log('✓ Predict routes registered');
 app.use('/api/profile', profileRoutes);
 console.log('✓ Profile routes registered');
+app.use('/api/consultation', consultationRoutes);
+console.log('✓ Consultation routes registered');
 
 // 404 handler
 app.use('*', (req, res) => {

@@ -58,16 +58,40 @@ interface Statistics {
   }>;
 }
 
+interface Consultation {
+  _id: string;
+  name: string;
+  company: string;
+  email: string;
+  phone: string;
+  companySize: string;
+  message: string;
+  status: 'pending' | 'contacted' | 'scheduled' | 'completed' | 'cancelled';
+  adminNotes: string;
+  scheduledDate: string | null;
+  contactedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [stats, setStats] = useState<Statistics | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRisk, setFilterRisk] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingConsultation, setEditingConsultation] = useState<Consultation | null>(null);
   const [createForm, setCreateForm] = useState({
     name: '',
     email: '',
@@ -88,7 +112,14 @@ const AdminDashboard: React.FC = () => {
     position: '',
     password: ''
   });
+  const [consultationForm, setConsultationForm] = useState({
+    status: 'pending',
+    adminNotes: '',
+    scheduledDate: '',
+    contactedBy: ''
+  });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'users' | 'consultations'>('users');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,19 +131,28 @@ const AdminDashboard: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const [usersResponse, statsResponse] = await Promise.all([
+        const [usersResponse, statsResponse, consultationsResponse] = await Promise.all([
           axios.get('http://localhost:8000/api/admin/users', {
             headers: { Authorization: `Bearer ${token}` }
           }),
           axios.get('http://localhost:8000/api/admin/statistics', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:8000/api/consultation', {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
 
         setUsers(usersResponse.data);
         setStats(statsResponse.data);
-      } catch (error) {
+        setConsultations(consultationsResponse.data);
+        console.log('Fetched consultations:', consultationsResponse.data);
+      } catch (error: any) {
         console.error('Error fetching data:', error);
+        if (error.response) {
+          console.error('Response data:', error.response.data);
+          console.error('Response status:', error.response.status);
+        }
       } finally {
         setLoading(false);
       }
@@ -227,6 +267,73 @@ const AdminDashboard: React.FC = () => {
     setShowEditModal(true);
   };
 
+  // Consultation management functions
+  const handleUpdateConsultation = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `http://localhost:8000/api/consultation/${editingConsultation?._id}`,
+        consultationForm,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      setConsultations(consultations.map(consultation => 
+        consultation._id === editingConsultation?._id 
+          ? response.data.consultation 
+          : consultation
+      ));
+      
+      setShowConsultationModal(false);
+      setEditingConsultation(null);
+      setConsultationForm({
+        status: 'pending',
+        adminNotes: '',
+        scheduledDate: '',
+        contactedBy: ''
+      });
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error updating consultation');
+    }
+  };
+
+  const handleDeleteConsultation = async (consultationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:8000/api/consultation/${consultationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setConsultations(consultations.filter(consultation => consultation._id !== consultationId));
+      setDeleteConfirm(null);
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error deleting consultation');
+    }
+  };
+
+  const openConsultationModal = (consultation: Consultation) => {
+    setEditingConsultation(consultation);
+    setConsultationForm({
+      status: consultation.status,
+      adminNotes: consultation.adminNotes,
+      scheduledDate: consultation.scheduledDate ? new Date(consultation.scheduledDate).toISOString().split('T')[0] : '',
+      contactedBy: consultation.contactedBy?._id || ''
+    });
+    setShowConsultationModal(true);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'contacted': return 'bg-blue-100 text-blue-800';
+      case 'scheduled': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8">
@@ -330,6 +437,38 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-purple-100 mb-1">Consultation Requests</h3>
+                  <p className="text-3xl font-bold">{consultations.length}</p>
+                  <div className="flex items-center mt-2 text-purple-100 text-sm">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    <span>Total requests</span>
+                  </div>
+                </div>
+                <div className="p-3 bg-white/20 rounded-full">
+                  <Calendar className="w-8 h-8" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-orange-100 mb-1">Pending Requests</h3>
+                  <p className="text-3xl font-bold">{consultations.filter(c => c.status === 'pending').length}</p>
+                  <div className="flex items-center mt-2 text-orange-100 text-sm">
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span>Need attention</span>
+                  </div>
+                </div>
+                <div className="p-3 bg-white/20 rounded-full">
+                  <Clock className="w-8 h-8" />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -395,13 +534,42 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Employee List */}
+        {/* Tab Navigation */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-4 lg:mb-0">
-              <Users className="w-6 h-6 mr-2 text-blue-600" />
-              All Employees
-            </h2>
+          <div className="flex space-x-1 mb-6">
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'users'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Users className="w-5 h-5 inline mr-2" />
+              Employees ({users.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('consultations')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'consultations'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Calendar className="w-5 h-5 inline mr-2" />
+              Consultations ({consultations.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Employee List */}
+        {activeTab === 'users' && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-4 lg:mb-0">
+                <Users className="w-6 h-6 mr-2 text-blue-600" />
+                All Employees
+              </h2>
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
               <div className="relative">
@@ -543,6 +711,87 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
         </div>
+        )}
+
+        {/* Consultation List */}
+        {activeTab === 'consultations' && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-4 lg:mb-0">
+                <Calendar className="w-6 h-6 mr-2 text-blue-600" />
+                Consultation Requests
+              </h2>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left border-b border-gray-200">
+                    <th className="py-4 px-4 font-semibold text-gray-700">Contact</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Company</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Status</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Date</th>
+                    <th className="py-4 px-4 font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consultations.map(consultation => (
+                    <tr key={consultation._id} className="border-b border-gray-100 hover:bg-blue-50/50 transition-all duration-200 group">
+                      <td className="py-4 px-4">
+                        <div>
+                          <div className="font-semibold text-gray-900">{consultation.name}</div>
+                          <div className="text-sm text-gray-600">{consultation.email}</div>
+                          <div className="text-sm text-gray-500">{consultation.phone}</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div>
+                          <div className="font-medium text-gray-900">{consultation.company}</div>
+                          <div className="text-sm text-gray-600">{consultation.companySize} employees</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(consultation.status)}`}>
+                          {consultation.status.charAt(0).toUpperCase() + consultation.status.slice(1)}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="text-sm text-gray-600">
+                          {new Date(consultation.createdAt).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            onClick={() => openConsultationModal(consultation)}
+                            className="flex items-center px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Manage
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(consultation._id)}
+                            className="flex items-center px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {consultations.length === 0 && (
+              <div className="text-center py-12">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No consultation requests found</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* User Details Modal */}
         {selectedUser && (
@@ -919,6 +1168,176 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* Consultation Management Modal */}
+        {showConsultationModal && editingConsultation && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-800">Manage Consultation</h3>
+                    <p className="text-gray-600 mt-1">{editingConsultation.name} - {editingConsultation.company}</p>
+                  </div>
+                  <button
+                    onClick={() => setShowConsultationModal(false)}
+                    className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-all duration-200"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+                    <input
+                      type="text"
+                      value={editingConsultation.name}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      value={editingConsultation.email}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input
+                      type="text"
+                      value={editingConsultation.phone}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                    <input
+                      type="text"
+                      value={editingConsultation.company}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Size</label>
+                    <input
+                      type="text"
+                      value={editingConsultation.companySize}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select
+                      value={consultationForm.status}
+                      onChange={(e) => setConsultationForm({...consultationForm, status: e.target.value as any})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Created</label>
+                    <input
+                      type="text"
+                      value={new Date(editingConsultation.createdAt).toLocaleString()}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Updated</label>
+                    <input
+                      type="text"
+                      value={new Date(editingConsultation.updatedAt).toLocaleString()}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client Message</label>
+                  <textarea
+                    value={editingConsultation.message}
+                    disabled
+                    rows={4}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="No message provided"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Admin Notes</label>
+                  <textarea
+                    value={consultationForm.adminNotes}
+                    onChange={(e) => setConsultationForm({...consultationForm, adminNotes: e.target.value})}
+                    rows={4}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Add notes about this consultation..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Scheduled Date</label>
+                    <input
+                      type="date"
+                      value={consultationForm.scheduledDate}
+                      onChange={(e) => setConsultationForm({...consultationForm, scheduledDate: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contacted By</label>
+                    <select
+                      value={consultationForm.contactedBy}
+                      onChange={(e) => setConsultationForm({...consultationForm, contactedBy: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select admin user</option>
+                      {users.filter(user => user.role === 'admin').map(user => (
+                        <option key={user._id} value={user._id}>{user.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-4 pt-6">
+                  <button
+                    onClick={() => setShowConsultationModal(false)}
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateConsultation}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Update Consultation
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Delete Confirmation Modal */}
         {deleteConfirm && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -927,8 +1346,12 @@ const AdminDashboard: React.FC = () => {
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Trash2 className="w-8 h-8 text-red-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Delete User</h3>
-                <p className="text-gray-600 mb-6">Are you sure you want to delete this user? This action cannot be undone.</p>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {activeTab === 'consultations' ? 'Delete Consultation' : 'Delete User'}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete this {activeTab === 'consultations' ? 'consultation' : 'user'}? This action cannot be undone.
+                </p>
                 <div className="flex justify-center space-x-4">
                   <button
                     onClick={() => setDeleteConfirm(null)}
@@ -937,11 +1360,17 @@ const AdminDashboard: React.FC = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={() => handleDeleteUser(deleteConfirm)}
+                    onClick={() => {
+                      if (activeTab === 'consultations') {
+                        handleDeleteConsultation(deleteConfirm);
+                      } else {
+                        handleDeleteUser(deleteConfirm);
+                      }
+                    }}
                     className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete User
+                    Delete {activeTab === 'consultations' ? 'Consultation' : 'User'}
                   </button>
                 </div>
               </div>

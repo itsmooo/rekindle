@@ -39,10 +39,10 @@ const Assessment: React.FC = () => {
                 <Shield className="w-5 h-5 text-green-500" />
                 <span className="text-gray-600 font-medium">100% Confidential</span>
               </div>
-              <div className="flex items-center space-x-2">
+              {/* <div className="flex items-center space-x-2">
                 <Users className="w-5 h-5 text-purple-500" />
                 <span className="text-gray-600 font-medium">10k+ Completed</span>
-              </div>
+              </div> */}
             </div>
           </div>
           
