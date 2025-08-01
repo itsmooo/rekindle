@@ -1,0 +1,11 @@
+LinearRegression Model Explanation
+========================================
+
+Intercept: 0.4519
+Coefficients:
+  Designation: 0.0092
+  Resource Allocation: 0.0597
+  Mental Fatigue Score: 0.1170
+  Company Type_Service: 0.0002
+  WFH Setup Available_Yes: -0.0081
+  Gender_Male: 0.0031
