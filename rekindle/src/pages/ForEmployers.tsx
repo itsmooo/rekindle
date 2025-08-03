@@ -90,7 +90,7 @@ const ForEmployers: React.FC = () => {
         </div>
         
         {/* Stats Section */}
-        <div className="max-w-5xl mx-auto mb-20">
+        {/* <div className="max-w-5xl mx-auto mb-20">
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold font-serif text-gray-800">
@@ -115,7 +115,7 @@ const ForEmployers: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
         
         {/* Benefits Section */}
         <div className="max-w-4xl mx-auto mb-20" id="benefits">

@@ -180,7 +180,7 @@ const Stories: React.FC = () => {
         </div>
 
         {/* Stats Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 mb-16">
+        {/* <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 mb-16">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-4">Our Impact</h2>
             <p className="text-gray-600">The real results of our comprehensive approach</p>
@@ -204,7 +204,7 @@ const Stories: React.FC = () => {
               <div className="text-gray-600">Expert Coaches</div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* CTA Section */}
         <div className="text-center">
