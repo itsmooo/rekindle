@@ -100,17 +100,17 @@ const ForEmployers: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2">$125B+</div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">$1k</div>
                 <p className="text-gray-600">Annual healthcare costs attributed to workplace stress</p>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2">550M</div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">400</div>
                 <p className="text-gray-600">Workdays lost annually due to stress and burnout</p>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2">40%</div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">20%</div>
                 <p className="text-gray-600">Average turnover rate in high-burnout organizations</p>
               </div>
             </div>
