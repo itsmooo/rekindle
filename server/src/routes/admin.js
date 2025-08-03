@@ -6,7 +6,11 @@ const router = express.Router();
 
 // Log all admin route requests
 router.use((req, res, next) => {
+  console.log(`=== ADMIN ROUTE DEBUG ===`);
   console.log(`Admin Route: ${req.method} ${req.path}`);
+  console.log('User from token:', req.user);
+  console.log('User role:', req.user?.role);
+  console.log('User ID:', req.user?.userId);
   next();
 });
 
@@ -14,7 +18,7 @@ router.use((req, res, next) => {
 router.get('/users', authorizeAdmin, async (req, res) => {
   try {
     const users = await User.find(
-      { role: 'user' },
+      {}, // Remove role filter to get all users
       { password: 0 } // Exclude password field
     ).sort({ createdAt: -1 });
 
@@ -144,7 +148,7 @@ router.delete('/users/:userId', authorizeAdmin, async (req, res) => {
 // Get burnout statistics
 router.get('/statistics', authorizeAdmin, async (req, res) => {
   try {
-    const users = await User.find({ role: 'user' });
+    const users = await User.find({}); // Get all users for statistics
     
     const stats = {
       totalUsers: users.length,

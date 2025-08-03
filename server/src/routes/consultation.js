@@ -1,6 +1,6 @@
 const express = require('express');
 const Consultation = require('../models/Consultation');
-const { authorizeAdmin } = require('../middleware/auth');
+const { authenticateToken, authorizeAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // Submit a new consultation request
@@ -40,7 +40,7 @@ router.post('/submit', async (req, res) => {
 });
 
 // Get all consultations (admin only)
-router.get('/', authorizeAdmin, async (req, res) => {
+router.get('/', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const consultations = await Consultation.find()
       .sort({ createdAt: -1 })
@@ -56,7 +56,7 @@ router.get('/', authorizeAdmin, async (req, res) => {
 });
 
 // Get consultation by ID (admin only)
-router.get('/:id', authorizeAdmin, async (req, res) => {
+router.get('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const consultation = await Consultation.findById(req.params.id)
       .populate('contactedBy', 'name email');
@@ -77,7 +77,7 @@ router.get('/:id', authorizeAdmin, async (req, res) => {
 });
 
 // Update consultation status and notes (admin only)
-router.put('/:id', authorizeAdmin, async (req, res) => {
+router.put('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const { status, adminNotes, scheduledDate, contactedBy } = req.body;
 
@@ -109,7 +109,7 @@ router.put('/:id', authorizeAdmin, async (req, res) => {
 });
 
 // Delete consultation (admin only)
-router.delete('/:id', authorizeAdmin, async (req, res) => {
+router.delete('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const consultation = await Consultation.findByIdAndDelete(req.params.id);
     

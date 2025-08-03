@@ -143,9 +143,21 @@ const AdminDashboard: React.FC = () => {
           })
         ]);
 
-        setUsers(usersResponse.data);
+        // Validate and sanitize user data
+        const sanitizedUsers = Array.isArray(usersResponse.data) 
+          ? usersResponse.data.map(user => ({
+              ...user,
+              name: user.name || 'Unknown User',
+              email: user.email || 'no-email@example.com',
+              role: user.role || 'user',
+              burnoutPredictions: Array.isArray(user.burnoutPredictions) ? user.burnoutPredictions : []
+            }))
+          : [];
+
+        setUsers(sanitizedUsers);
         setStats(statsResponse.data);
         setConsultations(consultationsResponse.data);
+        console.log('Fetched users:', sanitizedUsers);
         console.log('Fetched consultations:', consultationsResponse.data);
       } catch (error: any) {
         console.error('Error fetching data:', error);
@@ -174,10 +186,17 @@ const AdminDashboard: React.FC = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    // Add null checks for user properties
+    const userName = user.name || '';
+    const userEmail = user.email || '';
+    
+    const matchesSearch = userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         userEmail.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filterRisk === 'all') return matchesSearch;
+    
+    // Check if user has burnout predictions
+    if (!user.burnoutPredictions || user.burnoutPredictions.length === 0) return false;
     
     const latestPrediction = user.burnoutPredictions[user.burnoutPredictions.length - 1];
     if (!latestPrediction) return false;
