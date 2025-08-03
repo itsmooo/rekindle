@@ -29,24 +29,63 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+// Full admin privileges - can do everything
 const authorizeAdmin = (req, res, next) => {
   console.log('=== AUTHORIZE ADMIN DEBUG ===');
   console.log('AuthorizeAdmin - User from req:', req.user);
   console.log('AuthorizeAdmin - User role:', req.user?.role);
   console.log('AuthorizeAdmin - User ID:', req.user?.userId);
   
-  if (req.user && (req.user.role === 'admin' || req.user.role === 'hr')) {
+  if (req.user && req.user.role === 'admin') {
     console.log('AuthorizeAdmin - Access granted ✅');
     next();
   } else {
     console.log('AuthorizeAdmin - Access denied ❌');
     console.log('AuthorizeAdmin - User role:', req.user?.role);
-    console.log('AuthorizeAdmin - Expected roles: admin or hr');
-    res.status(403).json({ message: 'Access denied. Admin/HR privileges required.' });
+    console.log('AuthorizeAdmin - Expected role: admin');
+    res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  }
+};
+
+// HR privileges - can view data and manage consultations, but limited CRUD
+const authorizeHR = (req, res, next) => {
+  console.log('=== AUTHORIZE HR DEBUG ===');
+  console.log('AuthorizeHR - User from req:', req.user);
+  console.log('AuthorizeHR - User role:', req.user?.role);
+  console.log('AuthorizeHR - User ID:', req.user?.userId);
+  
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'hr')) {
+    console.log('AuthorizeHR - Access granted ✅');
+    next();
+  } else {
+    console.log('AuthorizeHR - Access denied ❌');
+    console.log('AuthorizeHR - User role:', req.user?.role);
+    console.log('AuthorizeHR - Expected roles: admin or hr');
+    res.status(403).json({ message: 'Access denied. HR/Admin privileges required.' });
+  }
+};
+
+// Read-only access for HR users
+const authorizeReadOnly = (req, res, next) => {
+  console.log('=== AUTHORIZE READ ONLY DEBUG ===');
+  console.log('AuthorizeReadOnly - User from req:', req.user);
+  console.log('AuthorizeReadOnly - User role:', req.user?.role);
+  console.log('AuthorizeReadOnly - User ID:', req.user?.userId);
+  
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'hr')) {
+    console.log('AuthorizeReadOnly - Access granted ✅');
+    next();
+  } else {
+    console.log('AuthorizeReadOnly - Access denied ❌');
+    console.log('AuthorizeReadOnly - User role:', req.user?.role);
+    console.log('AuthorizeReadOnly - Expected roles: admin or hr');
+    res.status(403).json({ message: 'Access denied. HR/Admin privileges required.' });
   }
 };
 
 module.exports = {
   authenticateToken,
   authorizeAdmin,
+  authorizeHR,
+  authorizeReadOnly,
 };

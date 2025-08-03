@@ -1,9 +1,9 @@
 const express = require('express');
 const Consultation = require('../models/Consultation');
-const { authenticateToken, authorizeAdmin } = require('../middleware/auth');
+const { authenticateToken, authorizeHR } = require('../middleware/auth');
 const router = express.Router();
 
-// Submit a new consultation request
+// Submit a new consultation request (public - no auth required)
 router.post('/submit', async (req, res) => {
   try {
     const { name, company, email, phone, companySize, message } = req.body;
@@ -39,8 +39,8 @@ router.post('/submit', async (req, res) => {
   }
 });
 
-// Get all consultations (admin only)
-router.get('/', authenticateToken, authorizeAdmin, async (req, res) => {
+// Get all consultations (HR/Admin can view)
+router.get('/', authenticateToken, authorizeHR, async (req, res) => {
   try {
     const consultations = await Consultation.find()
       .sort({ createdAt: -1 })
@@ -55,8 +55,8 @@ router.get('/', authenticateToken, authorizeAdmin, async (req, res) => {
   }
 });
 
-// Get consultation by ID (admin only)
-router.get('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+// Get consultation by ID (HR/Admin can view)
+router.get('/:id', authenticateToken, authorizeHR, async (req, res) => {
   try {
     const consultation = await Consultation.findById(req.params.id)
       .populate('contactedBy', 'name email');
@@ -76,8 +76,8 @@ router.get('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   }
 });
 
-// Update consultation status and notes (admin only)
-router.put('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+// Update consultation status and notes (HR/Admin can manage)
+router.put('/:id', authenticateToken, authorizeHR, async (req, res) => {
   try {
     const { status, adminNotes, scheduledDate, contactedBy } = req.body;
 
@@ -108,8 +108,8 @@ router.put('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   }
 });
 
-// Delete consultation (admin only)
-router.delete('/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+// Delete consultation (HR/Admin can delete)
+router.delete('/:id', authenticateToken, authorizeHR, async (req, res) => {
   try {
     const consultation = await Consultation.findByIdAndDelete(req.params.id);
     

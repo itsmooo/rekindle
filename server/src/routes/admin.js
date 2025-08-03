@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const User = require('../models/User');
-const { authorizeAdmin } = require('../middleware/auth');
+const { authorizeAdmin, authorizeHR, authorizeReadOnly } = require('../middleware/auth');
 const router = express.Router();
 
 // Log all admin route requests
@@ -14,8 +14,8 @@ router.use((req, res, next) => {
   next();
 });
 
-// Get all users with their burnout predictions
-router.get('/users', authorizeAdmin, async (req, res) => {
+// Get all users with their burnout predictions (HR can view)
+router.get('/users', authorizeReadOnly, async (req, res) => {
   try {
     const users = await User.find(
       {}, // Remove role filter to get all users
@@ -28,8 +28,8 @@ router.get('/users', authorizeAdmin, async (req, res) => {
   }
 });
 
-// Create a new user
-router.post('/users', authorizeAdmin, async (req, res) => {
+// Create a new user (Admin and HR can create)
+router.post('/users', authorizeHR, async (req, res) => {
   try {
     const { name, email, password, role, bio, location, company, position } = req.body;
     
@@ -63,8 +63,8 @@ router.post('/users', authorizeAdmin, async (req, res) => {
   }
 });
 
-// Get user details with burnout history
-router.get('/users/:userId', authorizeAdmin, async (req, res) => {
+// Get user details with burnout history (HR can view)
+router.get('/users/:userId', authorizeReadOnly, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId, { password: 0 });
     if (!user) {
@@ -76,8 +76,8 @@ router.get('/users/:userId', authorizeAdmin, async (req, res) => {
   }
 });
 
-// Update a user
-router.put('/users/:userId', authorizeAdmin, async (req, res) => {
+// Update a user (Admin and HR can update)
+router.put('/users/:userId', authorizeHR, async (req, res) => {
   console.log('PUT /users/:userId called with userId:', req.params.userId);
   console.log('Request body:', req.body);
   
@@ -124,7 +124,7 @@ router.put('/users/:userId', authorizeAdmin, async (req, res) => {
   }
 });
 
-// Delete a user
+// Delete a user (Admin only)
 router.delete('/users/:userId', authorizeAdmin, async (req, res) => {
   console.log('DELETE /users/:userId called with userId:', req.params.userId);
   
@@ -145,8 +145,8 @@ router.delete('/users/:userId', authorizeAdmin, async (req, res) => {
   }
 });
 
-// Get burnout statistics
-router.get('/statistics', authorizeAdmin, async (req, res) => {
+// Get burnout statistics (HR can view)
+router.get('/statistics', authorizeReadOnly, async (req, res) => {
   try {
     const users = await User.find({}); // Get all users for statistics
     
@@ -205,7 +205,7 @@ router.get('/statistics', authorizeAdmin, async (req, res) => {
   }
 });
 
-// Make burnout prediction for a user
+// Make burnout prediction for a user (Admin only)
 router.post('/predict/:userId', authorizeAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);

@@ -120,17 +120,39 @@ const AdminDashboard: React.FC = () => {
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'consultations'>('users');
+  const [userRole, setUserRole] = useState<'admin' | 'hr' | 'user'>('user');
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    console.log('AdminDashboard - Token present:', token ? 'Yes' : 'No');
+    console.log('AdminDashboard - User data:', userData);
+    
     if (!token) {
+      console.log('AdminDashboard - No token, redirecting to login');
       navigate('/login');
       return;
     }
 
+    // Check if user has admin or HR privileges
+    if (userData) {
+      const user = JSON.parse(userData);
+      console.log('AdminDashboard - User role:', user.role);
+      setUserRole(user.role);
+      
+      if (user.role !== 'admin' && user.role !== 'hr') {
+        console.log('AdminDashboard - User is not admin or HR, redirecting');
+        navigate('/');
+        return;
+      }
+    }
+
     const fetchData = async () => {
       try {
+        console.log('AdminDashboard - Fetching data...');
+        
         const [usersResponse, statsResponse, consultationsResponse] = await Promise.all([
           axios.get('http://localhost:8000/api/admin/users', {
             headers: { Authorization: `Bearer ${token}` }
@@ -160,10 +182,26 @@ const AdminDashboard: React.FC = () => {
         console.log('Fetched users:', sanitizedUsers);
         console.log('Fetched consultations:', consultationsResponse.data);
       } catch (error: any) {
-        console.error('Error fetching data:', error);
+        console.error('AdminDashboard - Error fetching data:', error);
         if (error.response) {
-          console.error('Response data:', error.response.data);
-          console.error('Response status:', error.response.status);
+          console.error('AdminDashboard - Response data:', error.response.data);
+          console.error('AdminDashboard - Response status:', error.response.status);
+          
+          // Handle specific error cases
+          if (error.response.status === 401) {
+            console.log('AdminDashboard - Unauthorized, redirecting to login');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
+            return;
+          }
+          
+          if (error.response.status === 403) {
+            console.log('AdminDashboard - Forbidden, user lacks admin privileges');
+            alert('Access denied. Admin/HR privileges required.');
+            navigate('/');
+            return;
+          }
         }
       } finally {
         setLoading(false);
@@ -376,17 +414,33 @@ const AdminDashboard: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="text-4xl font-serif font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-2">
-                Admin Dashboard
+                {userRole === 'admin' ? 'Admin Dashboard' : 'HR Dashboard'}
               </h1>
-              <p className="text-gray-600 text-lg">Monitor employee wellbeing and burnout risks</p>
+              <p className="text-gray-600 text-lg">
+                {userRole === 'admin' 
+                  ? 'Monitor employee wellbeing and burnout risks' 
+                  : 'View employee data and manage consultations'
+                }
+              </p>
+              <div className="mt-2">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  userRole === 'admin' 
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                }`}>
+                  {userRole === 'admin' ? 'Administrator' : 'HR Manager'}
+                </span>
+              </div>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="mt-4 lg:mt-0 flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create User
-            </button>
+            {(userRole === 'admin' || userRole === 'hr') && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-4 lg:mt-0 flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create User
+              </button>
+            )}
           </div>
         </div>
 
@@ -700,20 +754,26 @@ const AdminDashboard: React.FC = () => {
                             View
                             <ChevronRight className="w-3 h-3 ml-1" />
                           </button>
-                          <button
-                            onClick={() => openEditModal(user)}
-                            className="flex items-center px-3 py-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all duration-200 group-hover:bg-green-100"
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(user._id)}
-                            className="flex items-center px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200 group-hover:bg-red-100"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
-                          </button>
+                          {(userRole === 'admin' || userRole === 'hr') && (
+                            <>
+                              <button
+                                onClick={() => openEditModal(user)}
+                                className="flex items-center px-3 py-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all duration-200 group-hover:bg-green-100"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </button>
+                            </>
+                          )}
+                          {userRole === 'admin' && (
+                            <button
+                              onClick={() => setDeleteConfirm(user._id)}
+                              className="flex items-center px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200 group-hover:bg-red-100"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
